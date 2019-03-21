@@ -1,20 +1,29 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import AddCardForm from '../components/AddCardForm'
+import React from 'react';
+import PropTypes from 'prop-types';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import * as Actions from '../actions';
+import AddCardForm from '../components/AddCardForm';
+import Card from '../components/Card';
 
 class Board extends React.Component {
   static propTypes = {
     index: PropTypes.number,
     name: PropTypes.string,
+    cards: PropTypes.array.isRequired,
+    addCard: PropTypes.func,
+    removeCard: PropTypes.func,
+    transferCard: PropTypes.func,
+    removeBoard: PropTypes.func,
   }
 
   handleDrop = e => {
-    e.preventDefault()
-    console.log('dropping...')
+    e.preventDefault();
+    this.props.transferCard(e.dataTransfer.getData('cardId'), this.props.index);
   }
 
   render() {
-    const { index, name } = this.props
+    const { index, name, cards, addCard, removeCard, removeBoard } = this.props;
     return (
       <div
         className="board"
@@ -29,12 +38,40 @@ class Board extends React.Component {
         onDragOver={e => e.preventDefault()}
         onDrop={this.handleDrop}
       >
+        <button
+          style={{
+            float: 'right',
+            border: 'none',
+            fontSize: '1rem',
+            cursor: 'pointer',
+          }}
+          onClick={() => removeBoard(index)}
+        >
+          &times;
+        </button>
         <h2 style={{ margin: '0', marginBottom: '1rem' }}>{name}</h2>
-
-        <AddCardForm boardIndex={index} />
+        {cards.map((card, i) => (<Card card={card} key={i} removeCard={removeCard} />
+        ))}
+        <AddCardForm boardIndex={index} addCard={addCard} />
       </div>
-    )
+    );
   }
 }
 
-export default Board
+const mapStateToProps = (state, ownProps) => ({
+  cards: state.cards.filter(card => card.board === ownProps.index)
+});
+
+// const mapDispatchToProps = dispatch => ({
+//   addCard: (text, boardIndex) => dispatch(Actions.addCard(text, boardIndex)),
+//   removeCard: (id) => dispatch(Actions.removeCard(id))
+// });
+
+const mapDispatchToProps = dispatch => bindActionCreators({
+  addCard: Actions.addCard, 
+  removeCard: Actions.removeCard,
+  transferCard: Actions.transferCard,
+  removeBoard: Actions.removeBoard
+}, dispatch);
+
+export default connect(mapStateToProps, mapDispatchToProps)(Board);
